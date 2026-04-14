@@ -103,14 +103,26 @@ function handleSocketMessage(message) {
 
 async function refreshData() {
   try {
-    const [interfaces, rules, profiles] = await Promise.all([
+    const [interfaces, rules, profiles] = await Promise.allSettled([
       API.interfaces.list(),
       API.rules.list(),
       API.profiles.list(),
     ]);
-    State.interfaces = interfaces;
-    State.rules = rules;
-    State.profiles = profiles;
+    if (interfaces.status === 'fulfilled') {
+      State.interfaces = interfaces.value;
+    } else {
+      console.warn('Failed to load interfaces:', interfaces.reason);
+    }
+    if (rules.status === 'fulfilled') {
+      State.rules = rules.value;
+    } else {
+      console.warn('Failed to load rules:', rules.reason);
+    }
+    if (profiles.status === 'fulfilled') {
+      State.profiles = profiles.value;
+    } else {
+      console.warn('Failed to load profiles:', profiles.reason);
+    }
     populateInterfaceSelects();
     renderInterfaces();
     renderRules();

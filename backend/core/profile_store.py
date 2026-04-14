@@ -26,7 +26,7 @@ class ProfileStore:
     def _load_json_map(self, path: str) -> dict[str, dict]:
         if not os.path.exists(path):
             return {}
-        with open(path, "r", encoding="utf-8") as handle:
+        with open(path, "r", encoding="utf-8-sig") as handle:
             return json.load(handle)
 
     def _save_custom(self, profiles: dict[str, ProfileRecord]) -> None:
