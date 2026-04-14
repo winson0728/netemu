@@ -16,6 +16,7 @@ class Settings:
     port: int
     data_dir: str
     rules_path: str
+    bridge_config_path: str
     custom_profiles_path: str
     preset_profiles_path: str
     monitor_interval_s: float
@@ -71,6 +72,7 @@ def load_settings() -> Settings:
         port=port,
         data_dir=data_dir,
         rules_path=os.path.join(data_dir, "rules.json"),
+        bridge_config_path=os.path.join(data_dir, "bridge.json"),
         custom_profiles_path=os.path.join(data_dir, "custom_profiles.json"),
         preset_profiles_path=os.path.join(backend_dir, "profiles", "presets.json"),
         monitor_interval_s=monitor_interval,

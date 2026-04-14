@@ -151,7 +151,7 @@ async function refreshData() {
       console.warn('Failed to load profiles:', profiles.reason);
     }
     populateInterfaceSelects();
-    restoreBridgeSelects();
+    await restoreBridgeSelects();
     renderInterfaces();
     renderRules();
     renderProfiles();
@@ -485,8 +485,6 @@ async function applyBridge() {
     if (dl2 && ul2) lines.push({ downlink: dl2, uplink: ul2 });
     if (!lines.length) throw new Error('Configure at least one line pair (Downlink + Uplink)');
     const response = await API.rules.setBridge(lines);
-    // Save bridge config to localStorage for interface display filtering
-    localStorage.setItem('netemu_bridge', JSON.stringify({ dl1, ul1, dl2, ul2 }));
     updateBridgeIfaceMap();
     renderInterfaces();
     toast(response.success ? `Bridge applied (${lines.length} line${lines.length > 1 ? 's' : ''}).` : `Bridge errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
@@ -495,14 +493,18 @@ async function applyBridge() {
   }
 }
 
-function restoreBridgeSelects() {
+async function restoreBridgeSelects() {
   try {
-    const saved = JSON.parse(localStorage.getItem('netemu_bridge') || 'null');
-    if (!saved) return;
-    if (saved.dl1) document.getElementById('cfg-downlink-1').value = saved.dl1;
-    if (saved.ul1) document.getElementById('cfg-uplink-1').value = saved.ul1;
-    if (saved.dl2) document.getElementById('cfg-downlink-2').value = saved.dl2;
-    if (saved.ul2) document.getElementById('cfg-uplink-2').value = saved.ul2;
+    const config = await API.rules.getBridge();
+    const lines = config.lines || [];
+    if (lines[0]) {
+      document.getElementById('cfg-downlink-1').value = lines[0].downlink || '';
+      document.getElementById('cfg-uplink-1').value = lines[0].uplink || '';
+    }
+    if (lines[1]) {
+      document.getElementById('cfg-downlink-2').value = lines[1].downlink || '';
+      document.getElementById('cfg-uplink-2').value = lines[1].uplink || '';
+    }
   } catch (_) {}
 }
 

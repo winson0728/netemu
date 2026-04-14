@@ -109,7 +109,7 @@ select {
 }
 
 .iface-grid {
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 .iface-card,
@@ -118,7 +118,29 @@ select {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.72);
-  padding: 16px;
+  padding: 14px;
+}
+
+.iface-card {
+  padding: 12px;
+}
+
+.iface-card h3 {
+  font-size: 15px;
+}
+
+.iface-card .metric-grid {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.iface-card .metric {
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.iface-card .metric strong {
+  font-size: 13px;
 }
 
 .iface-card header,

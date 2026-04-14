@@ -106,6 +106,11 @@ async def set_disconnect(request: DisconnectRequest):
     return result
 
 
+@router.get("/bridge")
+async def get_bridge():
+    return services.bridge_config
+
+
 @router.post("/bridge")
 async def set_bridge(request: BridgeRequest):
     lines = request.get_lines()
@@ -123,5 +128,7 @@ async def set_bridge(request: BridgeRequest):
         raise HTTPException(status_code=404, detail=f"Interface not found: {', '.join(missing)}")
     line_tuples = [(pair.downlink, pair.uplink) for pair in lines]
     result = await asyncio.to_thread(services.tc.set_bridge, line_tuples)
+    # Persist bridge config for auto-apply on restart
+    services.save_bridge_config({"lines": [{"downlink": p.downlink, "uplink": p.uplink} for p in lines]})
     await services.monitor.push_event("bridge_applied", {"result": result})
     return result

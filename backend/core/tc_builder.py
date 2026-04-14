@@ -303,35 +303,13 @@ class TCBuilder:
         return {"success": not errors, "commands": executed, "errors": errors}
 
     def set_disconnect(self, interface: str, disconnect: bool) -> dict:
+        """Simulate disconnect by setting the interface administratively down/up."""
         validate_interface_name(interface)
-        chain = "FORWARD"
-        comment = f"netemu_disconnect_{interface}"
-        if disconnect:
-            existing = self.runner.run(
-                ["iptables", "-C", chain, "-i", interface, "-m", "comment", "--comment", comment, "-j", "DROP"],
-                ok_returncodes=(0, 1),
-            )
-            if existing.returncode == 0:
-                return {"success": True, "action": "already_disconnected"}
-            results = [
-                self.runner.run(["iptables", "-I", chain, "1", "-i", interface, "-m", "comment", "--comment", comment, "-j", "DROP"]),
-                self.runner.run(["iptables", "-I", chain, "1", "-o", interface, "-m", "comment", "--comment", comment, "-j", "DROP"]),
-            ]
-            errors = [item.stderr for item in results if item.returncode != 0]
-            return {"success": not errors, "action": "disconnected", "errors": errors}
-
-        results = [
-            self.runner.run(
-                ["iptables", "-D", chain, "-i", interface, "-m", "comment", "--comment", comment, "-j", "DROP"],
-                ok_returncodes=(0, 1),
-            ),
-            self.runner.run(
-                ["iptables", "-D", chain, "-o", interface, "-m", "comment", "--comment", comment, "-j", "DROP"],
-                ok_returncodes=(0, 1),
-            ),
-        ]
-        errors = [item.stderr for item in results if item.returncode not in (0, 1)]
-        return {"success": not errors, "action": "reconnected", "errors": errors}
+        state = "down" if disconnect else "up"
+        result = self.runner.run(["ip", "link", "set", "dev", interface, state])
+        if result.returncode != 0:
+            return {"success": False, "action": state, "errors": [result.stderr]}
+        return {"success": True, "action": "disconnected" if disconnect else "reconnected", "errors": []}
 
     def set_bridge(self, lines: list[tuple[str, str]]) -> dict:
         """Set up bridge mode for the given (downlink, uplink) pairs."""

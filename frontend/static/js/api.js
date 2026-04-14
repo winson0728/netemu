@@ -23,6 +23,7 @@ const API = {
     clear: (id) => API.request('POST', `/api/rules/${id}/clear`),
     delete: (id) => API.request('DELETE', `/api/rules/${id}`),
     disconnect: (iface, disconnect) => API.request('POST', '/api/rules/disconnect', { interface: iface, disconnect }),
+    getBridge: () => API.request('GET', '/api/rules/bridge'),
     setBridge: (lines) => API.request('POST', '/api/rules/bridge', { lines }),
   },
   profiles: {
