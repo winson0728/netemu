@@ -32,6 +32,11 @@ async def list_rules():
     return [item.model_dump(mode="json") for item in services.rules.list_rules()]
 
 
+@router.get("/bridge")
+async def get_bridge():
+    return services.bridge_config
+
+
 @router.get("/{rule_id}")
 async def get_rule(rule_id: str):
     rule = services.rules.get_rule(rule_id)
@@ -104,11 +109,6 @@ async def set_disconnect(request: DisconnectRequest):
         {"interface": request.interface, "disconnect": request.disconnect, "result": result},
     )
     return result
-
-
-@router.get("/bridge")
-async def get_bridge():
-    return services.bridge_config
 
 
 @router.post("/bridge")
