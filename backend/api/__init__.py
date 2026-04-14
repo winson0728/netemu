@@ -1,1 +1,1 @@
-﻿"""API routers for NetEmu."""
+"""API routers for NetEmu."""

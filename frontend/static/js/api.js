@@ -1,4 +1,4 @@
-﻿const API = {
+const API = {
   async request(method, path, body) {
     const options = {
       method,

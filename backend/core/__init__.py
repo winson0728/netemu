@@ -1,1 +1,1 @@
-﻿"""Core services for NetEmu."""
+"""Core services for NetEmu."""
