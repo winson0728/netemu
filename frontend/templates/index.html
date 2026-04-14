@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetEmu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Linux Traffic Control Console</p>
+        <h1>NetEmu Rewrite</h1>
+      </div>
+      <div class="topbar-actions">
+        <div id="ws-status" class="ws-status disconnected">Offline</div>
+        <button id="btn-refresh" class="btn btn-ghost">Refresh</button>
+        <button id="btn-add-rule" class="btn btn-primary">New Rule</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel panel-wide">
+        <div class="panel-head">
+          <div>
+            <h2>Interfaces</h2>
+            <p>Live traffic, current qdisc, and one-click rule editing.</p>
+          </div>
+        </div>
+        <div id="iface-grid" class="iface-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Profiles</h2>
+            <p>Preset starting points for common network conditions.</p>
+          </div>
+        </div>
+        <div id="profiles-list" class="profile-list"></div>
+      </section>
+
+      <section class="panel panel-wide">
+        <div class="panel-head">
+          <div>
+            <h2>Rules</h2>
+            <p>One persisted rule per interface. Variation state is shown separately.</p>
+          </div>
+        </div>
+        <div id="rules-list" class="rule-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Mode</h2>
+            <p>Switch between routing and bridge layouts.</p>
+          </div>
+        </div>
+        <div class="field-stack">
+          <label>
+            <span>Mode</span>
+            <select id="cfg-mode">
+              <option value="routing">Routing</option>
+              <option value="bridge">Bridge</option>
+            </select>
+          </label>
+          <label>
+            <span>WAN interface</span>
+            <select id="cfg-wan-iface"></select>
+          </label>
+          <label>
+            <span>LAN interface</span>
+            <select id="cfg-lan-iface"></select>
+          </label>
+          <button id="btn-apply-mode" class="btn btn-primary">Apply Mode</button>
+          <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">Open API docs</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <p class="eyebrow">Rule Editor</p>
+          <h3 id="modal-title">Create Rule</h3>
+        </div>
+        <button id="btn-close-modal" class="btn btn-ghost">Close</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="rule-id">
+        <div class="form-grid">
+          <label>
+            <span>Interface</span>
+            <select id="rule-iface"></select>
+          </label>
+          <label>
+            <span>Label</span>
+            <input id="rule-label" type="text" placeholder="e.g. User A 5G">
+          </label>
+          <label>
+            <span>Bandwidth (kbit)</span>
+            <input id="p-bw" type="number" min="0" step="100" value="0">
+          </label>
+          <label>
+            <span>Delay (ms)</span>
+            <input id="p-delay" type="number" min="0" step="0.1" value="0">
+          </label>
+          <label>
+            <span>Jitter (ms)</span>
+            <input id="p-jitter" type="number" min="0" step="0.1" value="0">
+          </label>
+          <label>
+            <span>Loss (%)</span>
+            <input id="p-loss" type="number" min="0" max="100" step="0.01" value="0">
+          </label>
+          <label>
+            <span>Corrupt (%)</span>
+            <input id="p-corrupt" type="number" min="0" max="100" step="0.01" value="0">
+          </label>
+          <label>
+            <span>Duplicate (%)</span>
+            <input id="p-duplicate" type="number" min="0" max="100" step="0.01" value="0">
+          </label>
+          <label>
+            <span>Disorder (%)</span>
+            <input id="p-disorder" type="number" min="0" max="100" step="0.01" value="0">
+          </label>
+          <label>
+            <span>Direction</span>
+            <select id="p-direction">
+              <option value="egress">Egress</option>
+              <option value="ingress">Ingress</option>
+              <option value="both">Both</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="variation-block">
+          <label class="toggle-row">
+            <input id="var-enabled" type="checkbox">
+            <span>Enable periodic variation</span>
+          </label>
+          <div id="variation-fields" class="form-grid hidden">
+            <label>
+              <span>Delay range (ms)</span>
+              <input id="pv-delay" type="number" min="0" step="0.1" value="0">
+            </label>
+            <label>
+              <span>Jitter range (ms)</span>
+              <input id="pv-jitter" type="number" min="0" step="0.1" value="0">
+            </label>
+            <label>
+              <span>Loss range (%)</span>
+              <input id="pv-loss" type="number" min="0" step="0.01" value="0">
+            </label>
+            <label>
+              <span>Bandwidth range (kbit)</span>
+              <input id="pv-bw" type="number" min="0" step="100" value="0">
+            </label>
+            <label>
+              <span>Interval (s)</span>
+              <input id="pv-interval" type="number" min="1" max="3600" step="1" value="5">
+            </label>
+          </div>
+        </div>
+
+        <div class="disconnect-row">
+          <label>
+            <span>Timed disconnect (s)</span>
+            <input id="disco-duration" type="number" min="1" max="3600" step="1" value="10">
+          </label>
+          <button id="btn-disconnect-now" class="btn btn-danger">Toggle Disconnect</button>
+          <button id="btn-timed-disconnect" class="btn btn-ghost">Disconnect For Duration</button>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button id="btn-clear-rule" class="btn btn-ghost">Clear TC</button>
+        <button id="btn-delete-rule" class="btn btn-danger hidden">Delete Rule</button>
+        <div class="spacer"></div>
+        <button id="btn-save-rule" class="btn btn-primary">Save Rule</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

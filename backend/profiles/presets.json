@@ -1,0 +1,72 @@
+﻿{
+  "5g": {
+    "id": "5g",
+    "name": "5G NR",
+    "description": "Low-latency mobile profile for modern radio testing",
+    "category": "mobile",
+    "bandwidth_kbit": 300000,
+    "delay_ms": 5,
+    "jitter_ms": 2,
+    "loss_pct": 0.01,
+    "corrupt_pct": 0.001,
+    "duplicate_pct": 0.001,
+    "disorder_pct": 0.2,
+    "builtin": true
+  },
+  "4g_weak": {
+    "id": "4g_weak",
+    "name": "4G Weak Signal",
+    "description": "Higher loss and jitter for poor LTE coverage",
+    "category": "mobile",
+    "bandwidth_kbit": 5000,
+    "delay_ms": 80,
+    "jitter_ms": 40,
+    "loss_pct": 3.0,
+    "corrupt_pct": 0.1,
+    "duplicate_pct": 0.1,
+    "disorder_pct": 5.0,
+    "builtin": true
+  },
+  "wifi6": {
+    "id": "wifi6",
+    "name": "WiFi 6",
+    "description": "Good indoor WiFi profile with small jitter",
+    "category": "wifi",
+    "bandwidth_kbit": 500000,
+    "delay_ms": 5,
+    "jitter_ms": 2,
+    "loss_pct": 0.02,
+    "corrupt_pct": 0.002,
+    "duplicate_pct": 0.002,
+    "disorder_pct": 0.5,
+    "builtin": true
+  },
+  "satellite_geo": {
+    "id": "satellite_geo",
+    "name": "Satellite GEO",
+    "description": "High-latency satellite link for worst-case testing",
+    "category": "satellite",
+    "bandwidth_kbit": 20000,
+    "delay_ms": 600,
+    "jitter_ms": 50,
+    "loss_pct": 1.0,
+    "corrupt_pct": 0.1,
+    "duplicate_pct": 0.1,
+    "disorder_pct": 3.0,
+    "builtin": true
+  },
+  "fttp": {
+    "id": "fttp",
+    "name": "FTTP",
+    "description": "Near-clean fiber link",
+    "category": "fixed",
+    "bandwidth_kbit": 1000000,
+    "delay_ms": 2,
+    "jitter_ms": 0.5,
+    "loss_pct": 0.001,
+    "corrupt_pct": 0.0,
+    "duplicate_pct": 0.0,
+    "disorder_pct": 0.1,
+    "builtin": true
+  }
+}
