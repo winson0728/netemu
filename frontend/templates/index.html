@@ -58,7 +58,7 @@
         <div class="panel-head">
           <div>
             <h2>Mode</h2>
-            <p>Switch between routing and bridge layouts.</p>
+            <p>Switch between routing and bridge layouts. Configure up to 2 line pairs.</p>
           </div>
         </div>
         <div class="field-stack">
@@ -69,14 +69,28 @@
               <option value="bridge">Bridge</option>
             </select>
           </label>
-          <label>
-            <span>WAN interface</span>
-            <select id="cfg-wan-iface"></select>
-          </label>
-          <label>
-            <span>LAN interface</span>
-            <select id="cfg-lan-iface"></select>
-          </label>
+          <fieldset class="line-pair-fieldset">
+            <legend>Line 1</legend>
+            <label>
+              <span>WAN interface</span>
+              <select id="cfg-wan-iface-1"></select>
+            </label>
+            <label>
+              <span>LAN interface</span>
+              <select id="cfg-lan-iface-1"></select>
+            </label>
+          </fieldset>
+          <fieldset class="line-pair-fieldset">
+            <legend>Line 2</legend>
+            <label>
+              <span>WAN interface</span>
+              <select id="cfg-wan-iface-2"></select>
+            </label>
+            <label>
+              <span>LAN interface</span>
+              <select id="cfg-lan-iface-2"></select>
+            </label>
+          </fieldset>
           <button id="btn-apply-mode" class="btn btn-primary">Apply Mode</button>
           <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">Open API docs</a>
         </div>

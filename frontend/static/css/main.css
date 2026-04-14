@@ -248,6 +248,22 @@ select {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.line-pair-fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.line-pair-fieldset legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  padding: 0 6px;
+}
+
 label {
   display: grid;
   gap: 6px;

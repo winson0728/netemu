@@ -86,8 +86,7 @@ class DisconnectRequest(_InterfaceValidatorMixin):
     disconnect: bool
 
 
-class ModeRequest(BaseModel):
-    mode: Mode
+class LinePair(BaseModel):
     wan_iface: str
     lan_iface: str
 
@@ -95,6 +94,29 @@ class ModeRequest(BaseModel):
     @classmethod
     def _validate_interface(cls, value: str) -> str:
         return validate_interface_name(value)
+
+
+class ModeRequest(BaseModel):
+    mode: Mode
+    lines: list[LinePair] = Field(default_factory=list, max_length=4)
+
+    # Backward compat: accept flat wan_iface/lan_iface for single-line callers
+    wan_iface: str | None = None
+    lan_iface: str | None = None
+
+    @field_validator("wan_iface", "lan_iface", mode="before")
+    @classmethod
+    def _validate_opt_iface(cls, value):
+        if value is not None and value != "":
+            return validate_interface_name(value)
+        return value
+
+    def get_lines(self) -> list[LinePair]:
+        if self.lines:
+            return self.lines
+        if self.wan_iface and self.lan_iface:
+            return [LinePair(wan_iface=self.wan_iface, lan_iface=self.lan_iface)]
+        return []
 
 
 class ScheduledDisconnectRequest(_InterfaceValidatorMixin):

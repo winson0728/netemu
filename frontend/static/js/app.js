@@ -136,7 +136,7 @@ function populateInterfaceSelects() {
   const options = ['<option value="">Select interface</option>']
     .concat(State.interfaces.map((item) => `<option value="${escapeAttr(item.name)}">${escapeHtml(item.name)} (${escapeHtml(item.state)})</option>`))
     .join('');
-  ['rule-iface', 'cfg-wan-iface', 'cfg-lan-iface'].forEach((id) => {
+  ['rule-iface', 'cfg-wan-iface-1', 'cfg-lan-iface-1', 'cfg-wan-iface-2', 'cfg-lan-iface-2'].forEach((id) => {
     const el = document.getElementById(id);
     const current = el.value;
     el.innerHTML = options;
@@ -416,11 +416,16 @@ async function deleteProfile(profileId) {
 async function applyMode() {
   try {
     const mode = document.getElementById('cfg-mode').value;
-    const wan = document.getElementById('cfg-wan-iface').value;
-    const lan = document.getElementById('cfg-lan-iface').value;
-    if (!wan || !lan) throw new Error('Select WAN and LAN interfaces');
-    const response = await API.rules.setMode(mode, wan, lan);
-    toast(response.success ? `Mode set to ${mode}.` : `Mode update returned errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
+    const lines = [];
+    const wan1 = document.getElementById('cfg-wan-iface-1').value;
+    const lan1 = document.getElementById('cfg-lan-iface-1').value;
+    if (wan1 && lan1) lines.push({ wan_iface: wan1, lan_iface: lan1 });
+    const wan2 = document.getElementById('cfg-wan-iface-2').value;
+    const lan2 = document.getElementById('cfg-lan-iface-2').value;
+    if (wan2 && lan2) lines.push({ wan_iface: wan2, lan_iface: lan2 });
+    if (!lines.length) throw new Error('Configure at least one line pair (WAN + LAN)');
+    const response = await API.rules.setMode(mode, lines);
+    toast(response.success ? `Mode set to ${mode} (${lines.length} line${lines.length > 1 ? 's' : ''}).` : `Mode update returned errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
   } catch (error) {
     toast(error.message, 'error');
   }

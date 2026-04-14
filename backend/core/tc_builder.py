@@ -302,34 +302,47 @@ class TCBuilder:
         errors = [item.stderr for item in results if item.returncode not in (0, 1)]
         return {"success": not errors, "action": "reconnected", "errors": errors}
 
-    def set_mode(self, mode: str, wan_iface: str, lan_iface: str) -> dict:
-        validate_interface_name(wan_iface)
-        validate_interface_name(lan_iface)
+    def set_mode(self, mode: str, lines: list[tuple[str, str]]) -> dict:
+        for wan, lan in lines:
+            validate_interface_name(wan)
+            validate_interface_name(lan)
         errors: list[str] = []
+        commands: list[list[str]] = []
+        iface_names: set[str] = set()
+        bridge_names: list[str] = []
+
+        for idx, (wan_iface, lan_iface) in enumerate(lines, 1):
+            br_name = f"br_netemu_{idx}"
+            bridge_names.append(br_name)
+            iface_names.update([wan_iface, lan_iface, br_name])
+
+            if mode == "routing":
+                commands.extend([
+                    ["ip", "link", "set", "dev", wan_iface, "nomaster"],
+                    ["ip", "link", "set", "dev", lan_iface, "nomaster"],
+                    ["ip", "link", "set", "dev", br_name, "down"],
+                    ["ip", "link", "delete", br_name, "type", "bridge"],
+                ])
+                nat_check = self.runner.run(
+                    ["iptables", "-t", "nat", "-C", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
+                    ok_returncodes=(0, 1),
+                )
+                if nat_check.returncode == 1:
+                    commands.append(["iptables", "-t", "nat", "-A", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"])
+            elif mode == "bridge":
+                commands.extend([
+                    ["iptables", "-t", "nat", "-D", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
+                    ["ip", "link", "add", "name", br_name, "type", "bridge"],
+                    ["ip", "link", "set", "dev", wan_iface, "master", br_name],
+                    ["ip", "link", "set", "dev", lan_iface, "master", br_name],
+                    ["ip", "link", "set", "dev", br_name, "up"],
+                ])
+
         if mode == "routing":
-            commands = [
-                ["ip", "link", "set", "dev", wan_iface, "nomaster"],
-                ["ip", "link", "set", "dev", lan_iface, "nomaster"],
-                ["ip", "link", "set", "dev", "br_netemu", "down"],
-                ["ip", "link", "delete", "br_netemu", "type", "bridge"],
-                ["sysctl", "-w", "net.ipv4.ip_forward=1"],
-            ]
-            nat_check = self.runner.run(
-                ["iptables", "-t", "nat", "-C", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
-                ok_returncodes=(0, 1),
-            )
-            if nat_check.returncode == 1:
-                commands.append(["iptables", "-t", "nat", "-A", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"])
+            commands.append(["sysctl", "-w", "net.ipv4.ip_forward=1"])
         elif mode == "bridge":
-            commands = [
-                ["sysctl", "-w", "net.ipv4.ip_forward=0"],
-                ["iptables", "-t", "nat", "-D", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
-                ["ip", "link", "add", "name", "br_netemu", "type", "bridge"],
-                ["ip", "link", "set", "dev", wan_iface, "master", "br_netemu"],
-                ["ip", "link", "set", "dev", lan_iface, "master", "br_netemu"],
-                ["ip", "link", "set", "dev", "br_netemu", "up"],
-            ]
-        else:
+            commands.insert(0, ["sysctl", "-w", "net.ipv4.ip_forward=0"])
+        elif mode not in ("routing", "bridge"):
             return {"success": False, "mode": mode, "errors": [f"unsupported mode: {mode}"]}
 
         executed: list[str] = []
@@ -339,9 +352,9 @@ class TCBuilder:
                 ok_returncodes = (0, 1, 2)
             if argv[:4] == ["ip", "link", "add", "name"]:
                 ok_returncodes = (0, 2)
-            if argv[:5] == ["ip", "link", "set", "dev", wan_iface] or argv[:5] == ["ip", "link", "set", "dev", lan_iface]:
+            if argv[0] == "ip" and len(argv) >= 5 and argv[3] in iface_names:
                 ok_returncodes = (0, 1, 2)
-            if argv[:5] == ["ip", "link", "set", "dev", "br_netemu"]:
+            if argv[0] == "ip" and len(argv) >= 5 and argv[4] in iface_names:
                 ok_returncodes = (0, 1, 2)
             result = self.runner.run(argv, ok_returncodes=ok_returncodes)
             executed.append(result.command_text())

@@ -105,11 +105,20 @@ async def set_disconnect(request: DisconnectRequest):
 
 @router.post("/mode")
 async def set_mode(request: ModeRequest):
-    if request.wan_iface == request.lan_iface:
-        raise HTTPException(status_code=400, detail="WAN and LAN interfaces must be different")
-    missing = [name for name in (request.wan_iface, request.lan_iface) if not services.tc.interface_exists(name)]
+    lines = request.get_lines()
+    if not lines:
+        raise HTTPException(status_code=400, detail="At least one WAN/LAN pair is required")
+    all_ifaces: list[str] = []
+    for pair in lines:
+        if pair.wan_iface == pair.lan_iface:
+            raise HTTPException(status_code=400, detail=f"WAN and LAN must be different: {pair.wan_iface}")
+        all_ifaces.extend([pair.wan_iface, pair.lan_iface])
+    if len(set(all_ifaces)) != len(all_ifaces):
+        raise HTTPException(status_code=400, detail="Each interface can only appear in one line pair")
+    missing = [name for name in all_ifaces if not services.tc.interface_exists(name)]
     if missing:
         raise HTTPException(status_code=404, detail=f"Interface not found: {', '.join(missing)}")
-    result = await asyncio.to_thread(services.tc.set_mode, request.mode.value, request.wan_iface, request.lan_iface)
+    line_tuples = [(pair.wan_iface, pair.lan_iface) for pair in lines]
+    result = await asyncio.to_thread(services.tc.set_mode, request.mode.value, line_tuples)
     await services.monitor.push_event("mode_changed", {"mode": request.mode.value, "result": result})
     return result
