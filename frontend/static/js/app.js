@@ -13,6 +13,33 @@ function ruleByInterface(name) {
   return State.rules.find((item) => item.interface === name) || null;
 }
 
+// Bridge interface display mapping — only these 4 interfaces are shown
+const BRIDGE_IFACE_MAP = {};
+
+function updateBridgeIfaceMap() {
+  // Clear previous
+  Object.keys(BRIDGE_IFACE_MAP).forEach((k) => delete BRIDGE_IFACE_MAP[k]);
+  const dl1 = document.getElementById('cfg-downlink-1')?.value;
+  const ul1 = document.getElementById('cfg-uplink-1')?.value;
+  const dl2 = document.getElementById('cfg-downlink-2')?.value;
+  const ul2 = document.getElementById('cfg-uplink-2')?.value;
+  if (dl1) BRIDGE_IFACE_MAP[dl1] = 'LINK-1-DL';
+  if (ul1) BRIDGE_IFACE_MAP[ul1] = 'LINK-1-UL';
+  if (dl2) BRIDGE_IFACE_MAP[dl2] = 'LINK-2-DL';
+  if (ul2) BRIDGE_IFACE_MAP[ul2] = 'LINK-2-UL';
+}
+
+function getIfaceDisplayName(name) {
+  return BRIDGE_IFACE_MAP[name] || name;
+}
+
+function getBridgeInterfaces() {
+  updateBridgeIfaceMap();
+  const names = Object.keys(BRIDGE_IFACE_MAP);
+  if (!names.length) return State.interfaces;
+  return State.interfaces.filter((iface) => names.includes(iface.name));
+}
+
 function setWsStatus(status) {
   const el = document.getElementById('ws-status');
   el.className = `ws-status ${status}`;
@@ -124,6 +151,7 @@ async function refreshData() {
       console.warn('Failed to load profiles:', profiles.reason);
     }
     populateInterfaceSelects();
+    restoreBridgeSelects();
     renderInterfaces();
     renderRules();
     renderProfiles();
@@ -146,11 +174,13 @@ function populateInterfaceSelects() {
 
 function renderInterfaces() {
   const root = document.getElementById('iface-grid');
-  if (!State.interfaces.length) {
-    root.innerHTML = '<div class="empty-state">No interfaces detected.</div>';
+  const visibleIfaces = getBridgeInterfaces();
+  if (!visibleIfaces.length) {
+    root.innerHTML = '<div class="empty-state">No bridge interfaces configured. Select interfaces in the Bridge panel and click Apply Bridge.</div>';
     return;
   }
-  root.innerHTML = State.interfaces.map((iface) => {
+  root.innerHTML = visibleIfaces.map((iface) => {
+    const displayName = getIfaceDisplayName(iface.name);
     const rule = ruleByInterface(iface.name);
     const status = rule?.status || 'idle';
     const badges = [];
@@ -163,8 +193,8 @@ function renderInterfaces() {
       <article class="iface-card">
         <header>
           <div>
-            <h3>${escapeHtml(iface.name)}</h3>
-            <div class="iface-meta">State ${escapeHtml(iface.state)} | Status ${escapeHtml(status)}</div>
+            <h3>${escapeHtml(displayName)}</h3>
+            <div class="iface-meta">${escapeHtml(iface.name)} | ${escapeHtml(iface.state)} | ${escapeHtml(status)}</div>
           </div>
           <button class="btn btn-ghost" onclick="openRuleEditor('${escapeAttr(iface.name)}')">Edit</button>
         </header>
@@ -173,7 +203,6 @@ function renderInterfaces() {
           <div class="metric"><span class="small">TX</span><strong>${formatRate(iface.rate_tx_bps || 0)}</strong></div>
         </div>
         <div class="rule-badges">${renderBadges(badges)}</div>
-        <p class="small">${iface.qdisc ? iface.qdisc : 'No qdisc active'}</p>
       </article>
     `;
   }).join('');
@@ -456,10 +485,25 @@ async function applyBridge() {
     if (dl2 && ul2) lines.push({ downlink: dl2, uplink: ul2 });
     if (!lines.length) throw new Error('Configure at least one line pair (Downlink + Uplink)');
     const response = await API.rules.setBridge(lines);
+    // Save bridge config to localStorage for interface display filtering
+    localStorage.setItem('netemu_bridge', JSON.stringify({ dl1, ul1, dl2, ul2 }));
+    updateBridgeIfaceMap();
+    renderInterfaces();
     toast(response.success ? `Bridge applied (${lines.length} line${lines.length > 1 ? 's' : ''}).` : `Bridge errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
   } catch (error) {
     toast(error.message, 'error');
   }
+}
+
+function restoreBridgeSelects() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('netemu_bridge') || 'null');
+    if (!saved) return;
+    if (saved.dl1) document.getElementById('cfg-downlink-1').value = saved.dl1;
+    if (saved.ul1) document.getElementById('cfg-uplink-1').value = saved.ul1;
+    if (saved.dl2) document.getElementById('cfg-downlink-2').value = saved.dl2;
+    if (saved.ul2) document.getElementById('cfg-uplink-2').value = saved.ul2;
+  } catch (_) {}
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

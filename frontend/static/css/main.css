@@ -334,11 +334,22 @@ select {
   flex: 1;
 }
 
-.toggle-row {
+label.toggle-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 10px;
   font-weight: 600;
+}
+
+label.toggle-row span {
+  font-size: inherit;
+  color: var(--text);
+}
+
+label.toggle-row input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
 }
 
 .hidden {

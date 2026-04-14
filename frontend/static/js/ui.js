@@ -18,9 +18,11 @@ function toast(message, type = 'info', duration = 3000) {
 }
 
 function formatRate(bytesPerSecond) {
-  if (bytesPerSecond >= 1_000_000) return `${(bytesPerSecond / 1_000_000).toFixed(2)} MB/s`;
-  if (bytesPerSecond >= 1_000) return `${(bytesPerSecond / 1_000).toFixed(1)} KB/s`;
-  return `${bytesPerSecond.toFixed(0)} B/s`;
+  const bps = bytesPerSecond * 8;
+  if (bps >= 1_000_000_000) return `${(bps / 1_000_000_000).toFixed(2)} Gbps`;
+  if (bps >= 1_000_000) return `${(bps / 1_000_000).toFixed(2)} Mbps`;
+  if (bps >= 1_000) return `${(bps / 1_000).toFixed(1)} Kbps`;
+  return `${bps.toFixed(0)} bps`;
 }
 
 function formatBandwidth(kbit) {
