@@ -47,11 +47,6 @@ class Direction(str, Enum):
     both = "both"
 
 
-class Mode(str, Enum):
-    routing = "routing"
-    bridge = "bridge"
-
-
 class VariationConfig(BaseModel):
     delay_range_ms: float = Field(default=0, ge=0, le=60_000)
     jitter_range_ms: float = Field(default=0, ge=0, le=60_000)
@@ -60,11 +55,20 @@ class VariationConfig(BaseModel):
     interval_s: int = Field(default=5, ge=1, le=3600)
 
 
+class DisconnectSchedule(BaseModel):
+    """Periodic disconnect cycling: disconnect for disconnect_s, reconnect for interval_s, repeat."""
+    enabled: bool = False
+    disconnect_s: float = Field(default=5.0, ge=0.5, le=3600, description="Duration of each disconnect period")
+    interval_s: float = Field(default=30.0, ge=1.0, le=86400, description="Time between disconnect cycles (connected time)")
+    repeat: int = Field(default=0, ge=0, le=10000, description="Number of cycles, 0 = infinite")
+
+
 class RuleBase(_InterfaceValidatorMixin, _NetworkParamsMixin):
     label: str = Field(default="", max_length=256)
     direction: Direction = Direction.egress
     variation_enabled: bool = False
     variation: VariationConfig | None = None
+    disconnect_schedule: DisconnectSchedule | None = None
 
 
 class RuleUpsertRequest(RuleBase):
@@ -87,36 +91,20 @@ class DisconnectRequest(_InterfaceValidatorMixin):
 
 
 class LinePair(BaseModel):
-    wan_iface: str
-    lan_iface: str
+    uplink: str
+    downlink: str
 
-    @field_validator("wan_iface", "lan_iface")
+    @field_validator("uplink", "downlink")
     @classmethod
     def _validate_interface(cls, value: str) -> str:
         return validate_interface_name(value)
 
 
-class ModeRequest(BaseModel):
-    mode: Mode
+class BridgeRequest(BaseModel):
     lines: list[LinePair] = Field(default_factory=list, max_length=4)
 
-    # Backward compat: accept flat wan_iface/lan_iface for single-line callers
-    wan_iface: str | None = None
-    lan_iface: str | None = None
-
-    @field_validator("wan_iface", "lan_iface", mode="before")
-    @classmethod
-    def _validate_opt_iface(cls, value):
-        if value is not None and value != "":
-            return validate_interface_name(value)
-        return value
-
     def get_lines(self) -> list[LinePair]:
-        if self.lines:
-            return self.lines
-        if self.wan_iface and self.lan_iface:
-            return [LinePair(wan_iface=self.wan_iface, lan_iface=self.lan_iface)]
-        return []
+        return self.lines
 
 
 class ScheduledDisconnectRequest(_InterfaceValidatorMixin):

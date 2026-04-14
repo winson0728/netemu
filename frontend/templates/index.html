@@ -57,41 +57,34 @@
       <section class="panel">
         <div class="panel-head">
           <div>
-            <h2>Mode</h2>
-            <p>Switch between routing and bridge layouts. Configure up to 2 line pairs.</p>
+            <h2>Bridge</h2>
+            <p>Configure up to 2 line pairs in bridge mode.</p>
           </div>
         </div>
         <div class="field-stack">
-          <label>
-            <span>Mode</span>
-            <select id="cfg-mode">
-              <option value="routing">Routing</option>
-              <option value="bridge">Bridge</option>
-            </select>
-          </label>
           <fieldset class="line-pair-fieldset">
-            <legend>Line 1</legend>
+            <legend>LINE A</legend>
             <label>
-              <span>WAN interface</span>
-              <select id="cfg-wan-iface-1"></select>
+              <span>LINE_A_Downlink</span>
+              <select id="cfg-downlink-1"></select>
             </label>
             <label>
-              <span>LAN interface</span>
-              <select id="cfg-lan-iface-1"></select>
+              <span>LINE_A_Uplink</span>
+              <select id="cfg-uplink-1"></select>
             </label>
           </fieldset>
           <fieldset class="line-pair-fieldset">
-            <legend>Line 2</legend>
+            <legend>LINE B</legend>
             <label>
-              <span>WAN interface</span>
-              <select id="cfg-wan-iface-2"></select>
+              <span>LINE_B_Downlink</span>
+              <select id="cfg-downlink-2"></select>
             </label>
             <label>
-              <span>LAN interface</span>
-              <select id="cfg-lan-iface-2"></select>
+              <span>LINE_B_Uplink</span>
+              <select id="cfg-uplink-2"></select>
             </label>
           </fieldset>
-          <button id="btn-apply-mode" class="btn btn-primary">Apply Mode</button>
+          <button id="btn-apply-bridge" class="btn btn-primary">Apply Bridge</button>
           <a class="docs-link" href="/docs" target="_blank" rel="noreferrer">Open API docs</a>
         </div>
       </section>
@@ -182,6 +175,27 @@
             <label>
               <span>Interval (s)</span>
               <input id="pv-interval" type="number" min="1" max="3600" step="1" value="5">
+            </label>
+          </div>
+        </div>
+
+        <div class="disconnect-block">
+          <label class="toggle-row">
+            <input id="disco-enabled" type="checkbox">
+            <span>Enable periodic disconnect</span>
+          </label>
+          <div id="disco-schedule-fields" class="form-grid hidden">
+            <label>
+              <span>Disconnect duration (s)</span>
+              <input id="disco-disconnect-s" type="number" min="0.5" max="3600" step="0.5" value="5">
+            </label>
+            <label>
+              <span>Connected interval (s)</span>
+              <input id="disco-interval-s" type="number" min="1" max="86400" step="1" value="30">
+            </label>
+            <label>
+              <span>Repeat cycles (0 = infinite)</span>
+              <input id="disco-repeat" type="number" min="0" max="10000" step="1" value="0">
             </label>
           </div>
         </div>

@@ -136,7 +136,7 @@ function populateInterfaceSelects() {
   const options = ['<option value="">Select interface</option>']
     .concat(State.interfaces.map((item) => `<option value="${escapeAttr(item.name)}">${escapeHtml(item.name)} (${escapeHtml(item.state)})</option>`))
     .join('');
-  ['rule-iface', 'cfg-wan-iface-1', 'cfg-lan-iface-1', 'cfg-wan-iface-2', 'cfg-lan-iface-2'].forEach((id) => {
+  ['rule-iface', 'cfg-downlink-1', 'cfg-uplink-1', 'cfg-downlink-2', 'cfg-uplink-2'].forEach((id) => {
     const el = document.getElementById(id);
     const current = el.value;
     el.innerHTML = options;
@@ -158,6 +158,7 @@ function renderInterfaces() {
     if (rule?.delay_ms) badges.push({ label: `Delay ${rule.delay_ms}ms` });
     if (rule?.loss_pct) badges.push({ label: `Loss ${rule.loss_pct}%`, warn: rule.loss_pct >= 1 });
     if (rule?.variation_enabled) badges.push({ label: 'Variation on' });
+    if (rule?.disconnect_schedule?.enabled) badges.push({ label: 'Disconnect cycling', warn: true });
     return `
       <article class="iface-card">
         <header>
@@ -192,6 +193,7 @@ function renderRules() {
     if (rule.loss_pct) badges.push({ label: `Loss ${rule.loss_pct}%`, warn: rule.loss_pct >= 1 });
     if (rule.direction) badges.push({ label: rule.direction });
     if (rule.variation_enabled) badges.push({ label: 'Variation enabled' });
+    if (rule.disconnect_schedule?.enabled) badges.push({ label: `Disconnect ${rule.disconnect_schedule.disconnect_s}s every ${rule.disconnect_schedule.interval_s}s`, warn: true });
     return `
       <article class="rule-card">
         <header>
@@ -260,10 +262,26 @@ function openRuleEditor(interfaceName = '', ruleId = '') {
   document.getElementById('pv-bw').value = 0;
   document.getElementById('pv-interval').value = 5;
   document.getElementById('disco-duration').value = 10;
+  document.getElementById('disco-enabled').checked = false;
+  document.getElementById('disco-schedule-fields').classList.add('hidden');
+  document.getElementById('disco-disconnect-s').value = 5;
+  document.getElementById('disco-interval-s').value = 30;
+  document.getElementById('disco-repeat').value = 0;
   document.getElementById('btn-delete-rule').classList.toggle('hidden', !ruleId);
 
   if (interfaceName) {
     document.getElementById('rule-iface').value = interfaceName;
+  }
+
+  // Auto-find existing rule by interface name if no ruleId given
+  if (!ruleId && interfaceName) {
+    const existing = State.rules.find((item) => item.interface === interfaceName);
+    if (existing) {
+      ruleId = existing.id;
+      document.getElementById('rule-id').value = ruleId;
+      document.getElementById('modal-title').textContent = 'Edit Rule';
+      document.getElementById('btn-delete-rule').classList.remove('hidden');
+    }
   }
 
   if (ruleId) {
@@ -288,6 +306,13 @@ function openRuleEditor(interfaceName = '', ruleId = '') {
         document.getElementById('pv-bw').value = rule.variation.bw_range_kbit || 0;
         document.getElementById('pv-interval').value = rule.variation.interval_s || 5;
       }
+      if (rule.disconnect_schedule && rule.disconnect_schedule.enabled) {
+        document.getElementById('disco-enabled').checked = true;
+        document.getElementById('disco-schedule-fields').classList.remove('hidden');
+        document.getElementById('disco-disconnect-s').value = rule.disconnect_schedule.disconnect_s || 5;
+        document.getElementById('disco-interval-s').value = rule.disconnect_schedule.interval_s || 30;
+        document.getElementById('disco-repeat').value = rule.disconnect_schedule.repeat || 0;
+      }
     }
   }
 
@@ -300,6 +325,7 @@ function closeRuleEditor() {
 
 function collectRuleForm() {
   const variationEnabled = document.getElementById('var-enabled').checked;
+  const discoEnabled = document.getElementById('disco-enabled').checked;
   return {
     id: document.getElementById('rule-id').value || undefined,
     interface: document.getElementById('rule-iface').value,
@@ -319,6 +345,12 @@ function collectRuleForm() {
       loss_range_pct: Number(document.getElementById('pv-loss').value || 0),
       bw_range_kbit: Number(document.getElementById('pv-bw').value || 0),
       interval_s: Number(document.getElementById('pv-interval').value || 5),
+    } : null,
+    disconnect_schedule: discoEnabled ? {
+      enabled: true,
+      disconnect_s: Number(document.getElementById('disco-disconnect-s').value || 5),
+      interval_s: Number(document.getElementById('disco-interval-s').value || 30),
+      repeat: Number(document.getElementById('disco-repeat').value || 0),
     } : null,
   };
 }
@@ -413,19 +445,18 @@ async function deleteProfile(profileId) {
   }
 }
 
-async function applyMode() {
+async function applyBridge() {
   try {
-    const mode = document.getElementById('cfg-mode').value;
     const lines = [];
-    const wan1 = document.getElementById('cfg-wan-iface-1').value;
-    const lan1 = document.getElementById('cfg-lan-iface-1').value;
-    if (wan1 && lan1) lines.push({ wan_iface: wan1, lan_iface: lan1 });
-    const wan2 = document.getElementById('cfg-wan-iface-2').value;
-    const lan2 = document.getElementById('cfg-lan-iface-2').value;
-    if (wan2 && lan2) lines.push({ wan_iface: wan2, lan_iface: lan2 });
-    if (!lines.length) throw new Error('Configure at least one line pair (WAN + LAN)');
-    const response = await API.rules.setMode(mode, lines);
-    toast(response.success ? `Mode set to ${mode} (${lines.length} line${lines.length > 1 ? 's' : ''}).` : `Mode update returned errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
+    const dl1 = document.getElementById('cfg-downlink-1').value;
+    const ul1 = document.getElementById('cfg-uplink-1').value;
+    if (dl1 && ul1) lines.push({ downlink: dl1, uplink: ul1 });
+    const dl2 = document.getElementById('cfg-downlink-2').value;
+    const ul2 = document.getElementById('cfg-uplink-2').value;
+    if (dl2 && ul2) lines.push({ downlink: dl2, uplink: ul2 });
+    if (!lines.length) throw new Error('Configure at least one line pair (Downlink + Uplink)');
+    const response = await API.rules.setBridge(lines);
+    toast(response.success ? `Bridge applied (${lines.length} line${lines.length > 1 ? 's' : ''}).` : `Bridge errors: ${(response.errors || []).join(', ')}`, response.success ? 'success' : 'error', 4500);
   } catch (error) {
     toast(error.message, 'error');
   }
@@ -450,9 +481,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('btn-disconnect-now').addEventListener('click', () => void disconnectNow());
   document.getElementById('btn-timed-disconnect').addEventListener('click', () => void timedDisconnect());
-  document.getElementById('btn-apply-mode').addEventListener('click', () => void applyMode());
+  document.getElementById('btn-apply-bridge').addEventListener('click', () => void applyBridge());
   document.getElementById('var-enabled').addEventListener('change', (event) => {
     document.getElementById('variation-fields').classList.toggle('hidden', !event.target.checked);
+  });
+  document.getElementById('disco-enabled').addEventListener('change', (event) => {
+    document.getElementById('disco-schedule-fields').classList.toggle('hidden', !event.target.checked);
   });
   document.getElementById('modal-overlay').addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closeRuleEditor();

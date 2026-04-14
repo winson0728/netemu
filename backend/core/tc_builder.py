@@ -88,6 +88,37 @@ class TCBuilder:
             )
         return interfaces
 
+    def get_interfaces_with_stats(self) -> list[dict]:
+        """Return all interfaces with stats in a single subprocess call."""
+        result = self.runner.run(["ip", "-s", "-j", "link", "show"])
+        interfaces: list[dict] = []
+        if result.success and result.stdout.startswith("["):
+            try:
+                for item in json.loads(result.stdout):
+                    name = item.get("ifname", "")
+                    if name == "lo":
+                        continue
+                    stats = item.get("stats64", item.get("stats", {}))
+                    rx = stats.get("rx", {})
+                    tx = stats.get("tx", {})
+                    interfaces.append({
+                        "name": name,
+                        "state": item.get("operstate", "UNKNOWN"),
+                        "flags": item.get("flags", []),
+                        "mac": item.get("address", ""),
+                        "stats": {
+                            "rx_bytes": rx.get("bytes", 0),
+                            "rx_packets": rx.get("packets", 0),
+                            "rx_dropped": rx.get("dropped", 0),
+                            "tx_bytes": tx.get("bytes", 0),
+                            "tx_packets": tx.get("packets", 0),
+                            "tx_dropped": tx.get("dropped", 0),
+                        },
+                    })
+            except json.JSONDecodeError:
+                logger.warning("Could not decode `ip -s -j link show` output")
+        return interfaces
+
     def interface_exists(self, interface: str) -> bool:
         validate_interface_name(interface)
         return any(item["name"] == interface for item in self.get_interfaces())
@@ -302,48 +333,27 @@ class TCBuilder:
         errors = [item.stderr for item in results if item.returncode not in (0, 1)]
         return {"success": not errors, "action": "reconnected", "errors": errors}
 
-    def set_mode(self, mode: str, lines: list[tuple[str, str]]) -> dict:
-        for wan, lan in lines:
-            validate_interface_name(wan)
-            validate_interface_name(lan)
+    def set_bridge(self, lines: list[tuple[str, str]]) -> dict:
+        """Set up bridge mode for the given (downlink, uplink) pairs."""
+        for downlink, uplink in lines:
+            validate_interface_name(downlink)
+            validate_interface_name(uplink)
         errors: list[str] = []
         commands: list[list[str]] = []
         iface_names: set[str] = set()
-        bridge_names: list[str] = []
 
-        for idx, (wan_iface, lan_iface) in enumerate(lines, 1):
+        commands.append(["sysctl", "-w", "net.ipv4.ip_forward=0"])
+
+        for idx, (downlink_iface, uplink_iface) in enumerate(lines, 1):
             br_name = f"br_netemu_{idx}"
-            bridge_names.append(br_name)
-            iface_names.update([wan_iface, lan_iface, br_name])
-
-            if mode == "routing":
-                commands.extend([
-                    ["ip", "link", "set", "dev", wan_iface, "nomaster"],
-                    ["ip", "link", "set", "dev", lan_iface, "nomaster"],
-                    ["ip", "link", "set", "dev", br_name, "down"],
-                    ["ip", "link", "delete", br_name, "type", "bridge"],
-                ])
-                nat_check = self.runner.run(
-                    ["iptables", "-t", "nat", "-C", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
-                    ok_returncodes=(0, 1),
-                )
-                if nat_check.returncode == 1:
-                    commands.append(["iptables", "-t", "nat", "-A", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"])
-            elif mode == "bridge":
-                commands.extend([
-                    ["iptables", "-t", "nat", "-D", "POSTROUTING", "-o", wan_iface, "-j", "MASQUERADE"],
-                    ["ip", "link", "add", "name", br_name, "type", "bridge"],
-                    ["ip", "link", "set", "dev", wan_iface, "master", br_name],
-                    ["ip", "link", "set", "dev", lan_iface, "master", br_name],
-                    ["ip", "link", "set", "dev", br_name, "up"],
-                ])
-
-        if mode == "routing":
-            commands.append(["sysctl", "-w", "net.ipv4.ip_forward=1"])
-        elif mode == "bridge":
-            commands.insert(0, ["sysctl", "-w", "net.ipv4.ip_forward=0"])
-        elif mode not in ("routing", "bridge"):
-            return {"success": False, "mode": mode, "errors": [f"unsupported mode: {mode}"]}
+            iface_names.update([downlink_iface, uplink_iface, br_name])
+            commands.extend([
+                ["iptables", "-t", "nat", "-D", "POSTROUTING", "-o", downlink_iface, "-j", "MASQUERADE"],
+                ["ip", "link", "add", "name", br_name, "type", "bridge"],
+                ["ip", "link", "set", "dev", downlink_iface, "master", br_name],
+                ["ip", "link", "set", "dev", uplink_iface, "master", br_name],
+                ["ip", "link", "set", "dev", br_name, "up"],
+            ])
 
         executed: list[str] = []
         for argv in commands:
@@ -360,4 +370,4 @@ class TCBuilder:
             executed.append(result.command_text())
             if result.returncode not in ok_returncodes:
                 errors.append(f"{result.command_text()}: {result.stderr or 'command failed'}")
-        return {"success": not errors, "mode": mode, "commands": executed, "errors": errors}
+        return {"success": not errors, "mode": "bridge", "commands": executed, "errors": errors}

@@ -23,7 +23,7 @@
     clear: (id) => API.request('POST', `/api/rules/${id}/clear`),
     delete: (id) => API.request('DELETE', `/api/rules/${id}`),
     disconnect: (iface, disconnect) => API.request('POST', '/api/rules/disconnect', { interface: iface, disconnect }),
-    setMode: (mode, lines) => API.request('POST', '/api/rules/mode', { mode, lines }),
+    setBridge: (lines) => API.request('POST', '/api/rules/bridge', { lines }),
   },
   profiles: {
     list: () => API.request('GET', '/api/profiles/'),

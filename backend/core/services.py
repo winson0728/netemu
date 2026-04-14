@@ -9,6 +9,7 @@ from core.profile_store import ProfileStore
 from core.rule_store import RuleStore
 from core.settings import settings
 from core.tc_builder import TCBuilder, TCConfig
+from core.disconnect_scheduler import DisconnectScheduler
 from core.variation import VariationService
 
 
@@ -21,13 +22,16 @@ class ServiceRegistry:
         self.profiles = ProfileStore(settings.preset_profiles_path, settings.custom_profiles_path)
         self.monitor = Monitor(self.tc, poll_interval_s=settings.monitor_interval_s)
         self.variation = VariationService(self.tc, self.rules, self.monitor)
+        self.disconnect_scheduler = DisconnectScheduler(self.tc, self.rules, self.monitor)
 
     async def startup(self) -> None:
         await self.monitor.start()
         await self.restore_rules()
         await self.variation.restore()
+        await self.disconnect_scheduler.restore()
 
     async def shutdown(self) -> None:
+        await self.disconnect_scheduler.stop_all()
         await self.variation.stop_all()
         await self.monitor.stop()
 

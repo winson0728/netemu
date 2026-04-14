@@ -55,13 +55,22 @@ class Monitor:
 
     async def _collect(self) -> None:
         now = time.time()
-        interfaces = await asyncio.to_thread(self.tc_builder.get_interfaces)
+        # Single subprocess call gets all interfaces + stats
+        interfaces = await asyncio.to_thread(self.tc_builder.get_interfaces_with_stats)
+        if not interfaces:
+            return
+
+        # Parallel qdisc queries for all interfaces
+        names = [item["name"] for item in interfaces]
+        qdisc_results = await asyncio.gather(
+            *(asyncio.to_thread(self.tc_builder.get_current_qdisc, n) for n in names)
+        )
+
         current_stats: dict[str, dict[str, float]] = {}
         snapshot: dict[str, dict[str, Any]] = {}
-        for item in interfaces:
+        for item, qdisc in zip(interfaces, qdisc_results):
             name = item["name"]
-            raw_stats = await asyncio.to_thread(self.tc_builder.get_interface_stats, name)
-            qdisc = await asyncio.to_thread(self.tc_builder.get_current_qdisc, name)
+            raw_stats = item["stats"]
             rate_rx = 0.0
             rate_tx = 0.0
             if name in self._prev_stats and self._prev_time > 0:
