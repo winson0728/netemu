@@ -43,7 +43,7 @@ function getBridgeInterfaces() {
 function setWsStatus(status) {
   const el = document.getElementById('ws-status');
   el.className = `ws-status ${status}`;
-  el.textContent = status === 'connected' ? 'Realtime Connected' : 'Realtime Offline';
+  el.textContent = AUI18n.p(status === 'connected' ? 'Realtime Connected' : 'Realtime Offline');
 }
 
 function cleanupWsTimers() {
@@ -161,7 +161,7 @@ async function refreshData() {
 }
 
 function populateInterfaceSelects() {
-  const options = ['<option value="">Select interface</option>']
+  const options = [`<option value="">${AUI18n.p('Select interface')}</option>`]
     .concat(State.interfaces.map((item) => `<option value="${escapeAttr(item.name)}">${escapeHtml(item.name)} (${escapeHtml(item.state)})</option>`))
     .join('');
   ['rule-iface', 'cfg-downlink-1', 'cfg-uplink-1', 'cfg-downlink-2', 'cfg-uplink-2'].forEach((id) => {
@@ -176,7 +176,7 @@ function renderInterfaces() {
   const root = document.getElementById('iface-grid');
   const visibleIfaces = getBridgeInterfaces();
   if (!visibleIfaces.length) {
-    root.innerHTML = '<div class="empty-state">No bridge interfaces configured. Select interfaces in the Bridge panel and click Apply Bridge.</div>';
+    root.innerHTML = `<div class="empty-state">${AUI18n.p('No bridge interfaces configured. Select interfaces in the Bridge panel and click Apply Bridge.')}</div>`;
     return;
   }
   root.innerHTML = visibleIfaces.map((iface) => {
@@ -196,7 +196,7 @@ function renderInterfaces() {
             <h3>${escapeHtml(displayName)}</h3>
             <div class="iface-meta">${escapeHtml(iface.name)} | ${escapeHtml(iface.state)} | ${escapeHtml(status)}</div>
           </div>
-          <button class="btn btn-ghost" onclick="openRuleEditor('${escapeAttr(iface.name)}')">Edit</button>
+          <button class="btn btn-ghost" onclick="openRuleEditor('${escapeAttr(iface.name)}')">${AUI18n.p('Edit')}</button>
         </header>
         <div class="metric-grid">
           <div class="metric"><span class="small">RX</span><strong>${formatRate(iface.rate_rx_bps || 0)}</strong></div>
@@ -211,7 +211,7 @@ function renderInterfaces() {
 function renderRules() {
   const root = document.getElementById('rules-list');
   if (!State.rules.length) {
-    root.innerHTML = '<div class="empty-state">No saved rules.</div>';
+    root.innerHTML = `<div class="empty-state">${AUI18n.p('No saved rules.')}</div>`;
     return;
   }
   root.innerHTML = State.rules.map((rule) => {
@@ -230,14 +230,14 @@ function renderRules() {
             <h3>${escapeHtml(rule.label || rule.interface)}</h3>
             <div class="rule-meta">${escapeHtml(rule.interface)} | ${escapeHtml(rule.status)}</div>
           </div>
-          <button class="btn btn-ghost" onclick="openRuleEditor('${escapeAttr(rule.interface)}', '${escapeAttr(rule.id)}')">Edit</button>
+          <button class="btn btn-ghost" onclick="openRuleEditor('${escapeAttr(rule.interface)}', '${escapeAttr(rule.id)}')">${AUI18n.p('Edit')}</button>
         </header>
         <div class="rule-badges">${renderBadges(badges)}</div>
         <p class="small">${rule.variation_state?.applied_at ? `Varied at ${new Date(rule.variation_state.applied_at * 1000).toLocaleTimeString()}` : 'Static rule'}</p>
         <div class="actions">
           <button class="btn btn-danger" onclick="toggleDisconnect('${escapeAttr(rule.interface)}', ${rule.status === 'disconnected'})">${rule.status === 'disconnected' ? 'Reconnect' : 'Disconnect'}</button>
-          <button class="btn btn-ghost" onclick="clearRule('${escapeAttr(rule.id)}')">Clear</button>
-          <button class="btn btn-ghost" onclick="deleteRule('${escapeAttr(rule.id)}')">Delete</button>
+          <button class="btn btn-ghost" onclick="clearRule('${escapeAttr(rule.id)}')">${AUI18n.p('Clear')}</button>
+          <button class="btn btn-ghost" onclick="deleteRule('${escapeAttr(rule.id)}')">${AUI18n.p('Delete')}</button>
         </div>
       </article>
     `;
@@ -247,7 +247,7 @@ function renderRules() {
 function renderProfiles() {
   const root = document.getElementById('profiles-list');
   if (!State.profiles.length) {
-    root.innerHTML = '<div class="empty-state">No profiles found.</div>';
+    root.innerHTML = `<div class="empty-state">${AUI18n.p('No profiles found.')}</div>`;
     return;
   }
   root.innerHTML = State.profiles.map((profile) => `
@@ -263,8 +263,8 @@ function renderProfiles() {
         ].filter(Boolean))}
       </div>
       <div class="actions">
-        <button class="btn btn-ghost" onclick="applyProfile('${escapeAttr(profile.id)}')">Use Profile</button>
-        ${profile.builtin ? '' : `<button class="btn btn-danger" onclick="deleteProfile('${escapeAttr(profile.id)}')">Delete</button>`}
+        <button class="btn btn-ghost" onclick="applyProfile('${escapeAttr(profile.id)}')">${AUI18n.p('Use Profile')}</button>
+        ${profile.builtin ? '' : `<button class="btn btn-danger" onclick="deleteProfile('${escapeAttr(profile.id)}')">${AUI18n.p('Delete')}</button>`}
       </div>
     </article>
   `).join('');
@@ -272,7 +272,7 @@ function renderProfiles() {
 
 function openRuleEditor(interfaceName = '', ruleId = '') {
   const overlay = document.getElementById('modal-overlay');
-  document.getElementById('modal-title').textContent = ruleId ? 'Edit Rule' : 'Create Rule';
+  document.getElementById('modal-title').textContent = AUI18n.p(ruleId ? 'Edit Rule' : 'Create Rule');
   document.getElementById('rule-id').value = ruleId || '';
   document.getElementById('rule-label').value = '';
   document.getElementById('p-bw').value = 0;
@@ -308,7 +308,7 @@ function openRuleEditor(interfaceName = '', ruleId = '') {
     if (existing) {
       ruleId = existing.id;
       document.getElementById('rule-id').value = ruleId;
-      document.getElementById('modal-title').textContent = 'Edit Rule';
+      document.getElementById('modal-title').textContent = AUI18n.p('Edit Rule');
       document.getElementById('btn-delete-rule').classList.remove('hidden');
     }
   }
@@ -549,3 +549,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   connectWS();
 });
 
+
+// Atayalan UI Kit：切換語言時重畫 JS 產生的區塊
+document.addEventListener('au:langchange', () => {
+  try { populateInterfaceSelects(); renderInterfaces(); renderRules(); renderProfiles();
+        setWsStatus(document.getElementById('ws-status').classList.contains('connected') ? 'connected' : 'disconnected'); } catch (e) { /* 資料尚未載入 */ }
+});

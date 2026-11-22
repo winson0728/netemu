@@ -1,13 +1,14 @@
 :root {
-  --bg: #f2eee6;
-  --panel: rgba(255, 250, 242, 0.92);
-  --line: rgba(73, 55, 39, 0.16);
-  --text: #221d18;
-  --muted: #6b5b4b;
-  --brand: #bb4d22;
-  --brand-2: #0c7a64;
-  --danger: #a2222b;
-  --shadow: 0 20px 50px rgba(59, 37, 20, 0.12);
+  /* Atayalan UI Kit：舊變數改指向套件 token（淺／深色由套件處理） */
+  --bg: var(--au-bg);
+  --panel: var(--au-surface);
+  --line: var(--au-border);
+  --text: var(--au-text);
+  --muted: var(--au-text-3);
+  --brand: var(--au-accent-strong);
+  --brand-2: var(--au-ok-solid);
+  --danger: var(--au-critical-solid);
+  --shadow: var(--au-shadow-sm);
 }
 
 * {
@@ -17,11 +18,7 @@
 body {
   margin: 0;
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(187, 77, 34, 0.15), transparent 28%),
-    radial-gradient(circle at top right, rgba(12, 122, 100, 0.14), transparent 24%),
-    linear-gradient(180deg, #f7f4ee 0%, #ece5db 100%);
-  font-family: "Chivo", sans-serif;
+  background: var(--bg);
 }
 
 button,
@@ -54,7 +51,7 @@ select {
 .panel h2,
 .modal h3 {
   margin: 0;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--au-font-mono);
 }
 
 .eyebrow {
@@ -80,7 +77,7 @@ select {
 .panel {
   border: 1px solid var(--line);
   background: var(--panel);
-  border-radius: 22px;
+  border-radius: var(--au-radius-lg);
   box-shadow: var(--shadow);
   padding: 20px;
 }
@@ -116,8 +113,8 @@ select {
 .profile-card,
 .rule-card {
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: var(--au-radius-lg);
+  background: var(--au-surface);
   padding: 14px;
 }
 
@@ -174,14 +171,14 @@ select {
 }
 
 .metric {
-  background: rgba(34, 29, 24, 0.04);
-  border-radius: 12px;
+  background: var(--au-surface-2);
+  border-radius: var(--au-radius-md);
   padding: 10px;
 }
 
 .metric strong {
   display: block;
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--au-font-mono);
   font-size: 15px;
 }
 
@@ -198,13 +195,13 @@ select {
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(12, 122, 100, 0.1);
-  color: #0a5f4f;
+  background: var(--au-ok-soft);
+  color: var(--au-ok);
   font-size: 12px;
 }
 
 .badge.warn {
-  background: rgba(162, 34, 43, 0.1);
+  background: var(--au-critical-soft);
   color: var(--danger);
 }
 
@@ -228,8 +225,8 @@ select {
 }
 
 .btn-primary {
-  background: var(--text);
-  color: #fff;
+  background: var(--au-accent-strong);
+  color: var(--au-on-accent);
 }
 
 .btn-ghost {
@@ -250,12 +247,12 @@ select {
 }
 
 .ws-status.connected {
-  background: rgba(12, 122, 100, 0.12);
-  color: #0a5f4f;
+  background: var(--au-ok-soft);
+  color: var(--au-ok);
 }
 
 .ws-status.disconnected {
-  background: rgba(162, 34, 43, 0.12);
+  background: var(--au-critical-soft);
   color: var(--danger);
 }
 
@@ -300,8 +297,9 @@ input,
 select {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--au-radius-md);
+  background: var(--au-surface);
+  color: var(--au-text);
   padding: 11px 12px;
 }
 
@@ -314,7 +312,7 @@ select {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(34, 29, 24, 0.35);
+  background: var(--au-overlay);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -324,9 +322,9 @@ select {
   width: min(980px, 100%);
   max-height: calc(100vh - 48px);
   overflow: auto;
-  border-radius: 26px;
-  background: #fff8f0;
-  box-shadow: 0 30px 60px rgba(34, 29, 24, 0.24);
+  border-radius: var(--au-radius-lg);
+  background: var(--au-surface);
+  box-shadow: var(--au-shadow-lg);
 }
 
 .modal-head,
@@ -389,27 +387,27 @@ label.toggle-row input[type="checkbox"] {
 .toast {
   min-width: 240px;
   max-width: 420px;
-  border-radius: 14px;
+  border-radius: var(--au-radius-lg);
   padding: 12px 14px;
   color: #fff;
   box-shadow: var(--shadow);
 }
 
 .toast.info {
-  background: #263238;
+  background: var(--au-top-bg);
 }
 
 .toast.success {
-  background: #0c7a64;
+  background: var(--au-ok-solid);
 }
 
 .toast.error {
-  background: #a2222b;
+  background: var(--au-critical-solid);
 }
 
 .empty-state {
   border: 1px dashed var(--line);
-  border-radius: 18px;
+  border-radius: var(--au-radius-lg);
   padding: 24px;
   color: var(--muted);
   text-align: center;
@@ -439,3 +437,9 @@ label.toggle-row input[type="checkbox"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Atayalan UI Kit 頂列內的元件 */
+.au-top .topbar-sub { color: var(--au-top-muted); font-size: 12px; letter-spacing: .08em; }
+.au-top .btn-on-dark { color: var(--au-top-text); border-color: rgba(255,255,255,.25); background: transparent; }
+.au-top .ws-status { font-size: 12px; }
+.topbar, .panel, .modal { backdrop-filter: none; }
